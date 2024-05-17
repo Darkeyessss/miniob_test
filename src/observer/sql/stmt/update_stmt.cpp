@@ -27,69 +27,53 @@ UpdateStmt::UpdateStmt(Table *table, Field field, Value value, FilterStmt *filte
 
 RC UpdateStmt::create(Db *db, const UpdateSqlNode &update_sql, Stmt *&stmt)
 {
-  ///check dbb
-  if(nullptr==db)
-  {
+  if (db == nullptr) {
     LOG_WARN("invalid argument. db is null");
     return RC::INVALID_ARGUMENT;
   }
 
-  const char*table_name=update_sql.relation_name.c_str();
-  //check whether the table exists
-  if(nullptr==table_name)
-  {
+  const char *table_name = update_sql.relation_name.c_str();
+
+  if (table_name == nullptr) {
     LOG_WARN("invalid argument. relation name is null.");
     return RC::INVALID_ARGUMENT;
   }
 
-  Table *table=db->find_table(table_name);
+  Table *table = db->find_table(table_name);
 
-  if(nullptr==table)
-  {
+  if (table == nullptr) {
     LOG_WARN("no such table. db=%s, table_name=%s", db->name(), table_name);
     return RC::SCHEMA_TABLE_NOT_EXIST;
   }
 
-  const FieldMeta *filed_meta=table->table_meta().field(update_sql.attribute_name.c_str());
+  const FieldMeta *filed_meta = table->table_meta().field(update_sql.attribute_name.c_str());
 
-  if(nullptr==filed_meta)
-  {
+  if (filed_meta == nullptr) {
     LOG_WARN("no such field. field=%s.%s.%s", db->name(), table->name(), update_sql.attribute_name.c_str());
     return RC::SCHEMA_FIELD_MISSING;
   }
 
-  for(auto condition : update_sql.conditions){
+  for (auto condition : update_sql.conditions) {
     const FieldMeta *condition_field_meta = table->table_meta().field(condition.left_attr.attribute_name.c_str());
-    if(nullptr == condition_field_meta){
+    if (nullptr == condition_field_meta) {
       LOG_WARN("no such field in condition. field=%s.%s.%s",db->name(),table->name(),condition.left_attr.attribute_name.c_str());
       return RC::SCHEMA_FIELD_MISSING;
     }
   }
 
- std::unordered_map<std::string, Table *> table_map;
-  table_map.insert(std::pair<std::string, Table*>(table_name,table));
-  FilterStmt *filter_stmt=nullptr;
-  RC rc = FilterStmt::create(
-    db,
-    table,
-    &table_map,
-    update_sql.conditions.data(),
-    static_cast<int>(update_sql.conditions.size()),
-    filter_stmt
-  );
+  std::unordered_map<std::string, Table *> table_map;
+  table_map.insert(std::pair<std::string, Table *>(table_name, table));
+  FilterStmt *filter_stmt = nullptr;
+  RC          rc          = FilterStmt::create(
+      db, table, &table_map, update_sql.conditions.data(), static_cast<int>(update_sql.conditions.size()), filter_stmt);
 
-  if (rc != RC::SUCCESS){
+  if (rc != RC::SUCCESS) {
     LOG_WARN("cannot construct filter stmt");
     return rc;
   }
 
-  UpdateStmt *update_stmt = new UpdateStmt(table,
-      Field(table, filed_meta), 
-      update_sql.value, 
-      filter_stmt
-    );
- 
+  UpdateStmt *update_stmt = new UpdateStmt(table, Field(table, filed_meta), update_sql.value, filter_stmt);
+
   stmt = update_stmt;
   return RC::SUCCESS;
-
 }

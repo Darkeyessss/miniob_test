@@ -39,8 +39,8 @@ RC UpdatePhysicalOperator::next()
 
   PhysicalOperator *child = children_[0].get();
 
-  std::vector<Record> insert_records; // 用于存储要插入的记录
-  std::vector<Record> delete_records; // 用于存储要删除的记录
+  std::vector<Record> insert_records; 
+  std::vector<Record> delete_records; 
   while (RC::SUCCESS == (rc = child->next())) {
     Tuple *tuple = child->current_tuple();
     if (nullptr == tuple) {
@@ -51,7 +51,7 @@ RC UpdatePhysicalOperator::next()
     RowTuple *row_tuple = static_cast<RowTuple *>(tuple);
     Record &record = row_tuple->record();
 
-    delete_records.emplace_back(record);//把这个记录写入要删的记录里面
+    delete_records.emplace_back(record);
     RC rc=RC::SUCCESS;
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to delete record: %s", strrc(rc));
@@ -84,34 +84,34 @@ RC UpdatePhysicalOperator::next()
             Value cell;
             if(target_index!=i)
             {
-                row_tuple->cell_at(i,cell);//如果当前单元不是目标字段的索引,从原始记录中获取第 i 个单元的值，并将其存储到 cell 中。
+                row_tuple->cell_at(i,cell);
             }
             else
             {
-                cell.set_value(value_);//如果当前单元是目标字段的索引，将目标字段的值 value_ 设置到 cell 中。从而完成把想要设置的值设置进去的目的
+                cell.set_value(value_);
             }
             values.emplace_back(cell);
         }
         //2.records
         Record new_record;
-        RC rc = table_->make_record(cell_num, values.data(), new_record);//制造一条新纪录，传参属性个数，改后的值，空的新纪录
+        RC rc = table_->make_record(cell_num, values.data(), new_record);
         if (rc != RC::SUCCESS) {
           LOG_WARN("failed to make record. rc=%s", strrc(rc));
           return rc;
         }
 
-      insert_records.emplace_back(new_record);//把这个记录写入要插的记录里面
+      insert_records.emplace_back(new_record);
 
     }
 
   }
-  for (size_t i=0;i<insert_records.size();++i){//遍历每个要插的记录
-    rc = trx_->delete_record(table_, delete_records[i]);//删除之前存在delete_records里面的要删的记录
+  for (size_t i=0;i<insert_records.size();++i){          //遍历
+    rc = trx_->delete_record(table_, delete_records[i]);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to delete record: %s", strrc(rc));
       return rc;
     }
-    rc = trx_->insert_record(table_, insert_records[i]);//插入之前存在insert_records里面的要删的记录
+    rc = trx_->insert_record(table_, insert_records[i]);
     if (rc != RC::SUCCESS) {
       LOG_WARN("failed to insert record: %s", strrc(rc));
       return rc;

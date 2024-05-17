@@ -254,12 +254,12 @@ RC LogicalPlanGenerator::create_plan(
 {
   Table *table = update_stmt->table();
 
-  // 首先创建select和filter算子
+  
   std::vector<Field> fields;
   fields.emplace_back(update_stmt->field());
   unique_ptr<LogicalOperator> table_get_oper(new TableGetLogicalOperator(table, fields, false));
   
-  // 过滤算子
+  
   unique_ptr<LogicalOperator> filter_oper;
   FilterStmt *filter_stmt = update_stmt->filter_stmt();
   RC rc = create_plan(filter_stmt, filter_oper);
